@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>プリンを食べた犯人を捜せ</title>
+<style>
+  #mainImage {
+    width: 600px;
+    border: 1px solid #ccc;
+    cursor: pointer;
+  }
+  #coord {
+    position: absolute;
+    background: rgba(255,255,255,0.8);
+    padding: 4px 6px;
+    border: 1px solid #aaa;
+    font-size: 12px;
+    pointer-events: none;
+  }
+  #textDisplay {
+    width: 600px;
+    height: 600px;
+    border: 1px solid #ccc;
+    display: none;
+    font-size: 24px;
+    padding: 20px;
+    box-sizing: border-box;
+    background: #fdfdfd;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<h1 style="text-align: left;">証拠を探そう</h1>
+
+<div style="position: relative; display: inline-block;">
+  <img id="mainImage" src="" />
+  <div id="coord"></div>
+  <div id="textDisplay"></div>
+</div>
+
+<script>
+/* ---------------------------------------------------------
+
+--------------------------------------------------------- */
+const base64Images = {
+  home: "./home.png",
+  img1: "./img_gunte.png",
+  img2: "./img_spoon.png",
+  img3: "./img_doornob.png",
+  img4: "./img_refredg.png"
+
+};
+
+/* ---------------------------------------------------------
+   座標設定（クリックした領域 → 表示する画像）
+   画像の幅600pxを前提にしているが、自由に変更可能
+--------------------------------------------------------- */
+const clickMap = [
+  { x1: 439,   y1: 455,   x2: 489, y2: 507, image: "img1" }, // 軍手
+  { x1: 162,   y1: 291,   x2: 172, y2: 335, image: "img2" }, // スプーン
+  { x1: 2,   y1: 416,   x2: 43, y2: 446, image: "img3" }, // ドアノブ
+  { x1: 491,   y1: 8,   x2: 585, y2: 160, image: "img4" },  // 冷蔵庫の取っ手
+  { x1: 350, y1: 14,   x2: 484, y2: 165, text: "シンクには使用済みのスプーンが置かれている。だらしない..." }, // シンク
+  { x1: 281,   y1: 59,   x2: 327, y2: 137, text: "顕微鏡。何を観察していたのだろう。" }, // 顕微鏡
+  { x1: 238,   y1: 124,   x2: 270, y2: 143, text: "シャーレ。サンプルは入っていない。" }, // シャーレ
+  { x1: 151,   y1: 75,   x2: 222, y2: 149, text: "電気泳動装置。これに複製したDNAを入れることで、DNAの長さを分析する。" }, // 電気泳動装置
+  { x1: 65,   y1: 55,   x2: 132, y2: 152, text: "PCR装置。これでサンプルから得た少ないDNAを増やし、分析できるようにする。" },  // PCR装置
+  { x1: 50, y1: 212,   x2: 90, y2: 341, text: "人体模型。寒そう。" }, // 人体模型
+  { x1: 483,   y1: 241,   x2: 560, y2: 361, text: "観葉植物。今日も元気いっぱい。" }, // 観葉植物
+  { x1: 173,   y1: 435,   x2: 248, y2: 511, text: "ダイアモンドの分子模型。正四面体構造が美しい。" }, // ダイアモンドの模型
+  { x1: 260,   y1: 451,   x2: 322, y2: 506, text: "アノマロカリス。古生代の海の覇者。エビみたいだし、美味しかったり？" }, // アノマロカリス
+  { x1: 180,   y1: 296,   x2: 232, y2: 321, text: "プリンを食べたであろう皿がそのままに。だらしない..." },  // プリンを食べた皿
+];
+
+const img = document.getElementById("mainImage");
+const coord = document.getElementById("coord");
+const textDisplay = document.getElementById("textDisplay");
+
+img.src = base64Images.home;
+let mode = "home";
+
+/* 座標表示 */
+/*img.addEventListener("mousemove", function(event) {
+  const rect = img.getBoundingClientRect();
+  const x = Math.floor(event.clientX - rect.left);
+  const y = Math.floor(event.clientY - rect.top);
+
+  coord.style.left = (event.clientX - rect.left + 10) + "px";
+  coord.style.top  = (event.clientY - rect.top + 10) + "px";
+  coord.textContent = `(${x}, ${y})`;
+});
+*/
+
+/* ホーム画像クリック → 画像 or テキスト表示 */
+img.addEventListener("click", function(event) {
+
+  const rect = img.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+
+  // -------------------------
+  // 画像表示中 → ホームに戻る
+  // -------------------------
+  if (mode === "image") {
+    img.src = base64Images.home;
+    img.style.display = "block";
+    textDisplay.style.display = "none";
+    mode = "home";
+    return;
+  }
+
+  // -------------------------
+  // ホーム画像のときだけ領域判定
+  // -------------------------
+  if (mode === "home") {
+
+    const target = clickMap.find(area =>
+      x >= area.x1 && x < area.x2 &&
+      y >= area.y1 && y < area.y2
+    );
+
+    if (!target) return;
+
+    // 画像表示
+    if (target.image) {
+      img.src = base64Images[target.image];
+      img.style.display = "block";
+      textDisplay.style.display = "none";
+      mode = "image";
+      return;
+    }
+
+    // テキスト表示
+    if (target.text) {
+      textDisplay.textContent = target.text;
+      textDisplay.style.display = "block";
+      img.style.display = "none";
+      mode = "text";
+      return;
+    }
+  }
+});
+
+textDisplay.addEventListener("click", function() {
+  if (mode === "text") {
+    textDisplay.style.display = "none";
+    img.style.display = "block";
+    img.src = base64Images.home;
+    mode = "home";
+  }
+});
+
+</script>
+
+</body>
+</html>
